@@ -1,0 +1,134 @@
+# Operating System Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+
+# IDE and Editor Files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+*.sublime-project
+*.sublime-workspace
+.vs/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
+
+# Dependency Directories
+node_modules/
+jspm_packages/
+bower_components/
+vendor/
+venv/
+env/
+ENV/
+.venv/
+
+# Build Outputs
+dist/
+build/
+out/
+target/
+*.egg-info/
+.next/
+.nuxt/
+.cache/
+.parcel-cache/
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.dylib
+*.dll
+*.exe
+*.class
+*.jar
+*.war
+*.ear
+
+# Environment Variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env*.local
+
+# Package Manager Files
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+Pipfile.lock
+poetry.lock
+Gemfile.lock
+
+# Test Coverage
+coverage/
+*.coverage
+.nyc_output/
+htmlcov/
+.pytest_cache/
+.coverage.*
+
+# Temporary Files
+tmp/
+temp/
+*.tmp
+*.bak
+*.backup
+
+# Database Files
+*.sqlite
+*.sqlite3
+*.db
+
+# Compiled Source
+*.com
+*.class
+*.dll
+*.exe
+*.o
+*.so
+
+# Archives
+*.7z
+*.dmg
+*.gz
+*.iso
+*.jar
+*.rar
+*.tar
+*.zip
+
+# Cloud and Deployment
+.terraform/
+*.tfstate
+*.tfstate.*
+.serverless/
+.firebase/
+.vercel/
+.netlify/
+
+# Application Specific
+*.pid
+*.seed
+*.pid.lock
+.sass-cache/
+connect.lock
+typings/
