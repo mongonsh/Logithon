@@ -133,3 +133,4 @@ temp/
 .sass-cache/
 connect.lock
 typings/
+backend/audio_output/
