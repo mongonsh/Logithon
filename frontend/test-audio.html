@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Audio Test</title>
+</head>
+<body>
+    <h1>Audio Test</h1>
+    <button onclick="testAudio()">Test Audio Playback</button>
+    <div id="status"></div>
+    
+    <script>
+        function testAudio() {
+            const status = document.getElementById('status');
+            status.innerHTML = 'Testing audio...';
+            
+            const audio = new Audio('/audio/04480ff0-c1ab-4ad6-bad5-2273f8688385.mp3');
+            
+            audio.addEventListener('loadstart', () => {
+                status.innerHTML += '<br>Audio loading started';
+            });
+            
+            audio.addEventListener('canplay', () => {
+                status.innerHTML += '<br>Audio can play';
+            });
+            
+            audio.addEventListener('error', (e) => {
+                status.innerHTML += '<br>Audio error: ' + e.message;
+            });
+            
+            audio.play().then(() => {
+                status.innerHTML += '<br>Audio playing successfully!';
+            }).catch(e => {
+                status.innerHTML += '<br>Audio playback error: ' + e.message;
+            });
+        }
+    </script>
+</body>
+</html>

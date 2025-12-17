@@ -1,5 +1,5 @@
 from typing import List, Dict, Any
-from .models import Box, LoadPlanRequest, LoadPlanResponse
+from models import Box, LoadPlanRequest, LoadPlanResponse
 
 
 def plan_load(body: LoadPlanRequest) -> LoadPlanResponse:

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState, useCallback } from "react";
 
 type Box = {
   id: string;
@@ -201,19 +201,25 @@ const LeftPanel: React.FC<{
                                 <div
                                   style={{
                                     position: "absolute",
-                                    bottom: -22,
+                                    bottom: -35,
                                     left: 0,
                                     background: "#C08F4F",
                                     color: "#2a1d10",
-                                    fontSize: 12,
-                                    padding: "2px 6px",
+                                    fontSize: 11,
+                                    padding: "3px 6px",
                                     borderRadius: 4,
                                     border: "1px solid #8a6232",
                                     whiteSpace: "nowrap",
-                                    zIndex: 10
+                                    zIndex: 10,
+                                    maxWidth: "200px"
                                   }}
                                 >
-                                  {b.id}{b.label ? ` • ${b.label}` : ""}{typeof b.confidence === "number" ? ` • ${(b.confidence * 100).toFixed(0)}%` : ""}
+                                  <div style={{ fontWeight: "bold" }}>{b.id}</div>
+                                  <div style={{ fontSize: 10 }}>
+                                    {b.w}×{b.h}px
+                                    {b.label ? ` • ${b.label}` : ""}
+                                    {typeof b.confidence === "number" ? ` • ${(b.confidence * 100).toFixed(0)}%` : ""}
+                                  </div>
                                 </div>
                               </div>
                             );
@@ -296,6 +302,29 @@ const LeftPanel: React.FC<{
             }}
           />
         </div>
+        
+        {/* Box Detection Summary */}
+        {pixelBoxes.length > 0 && (
+          <div style={{ marginTop: 12, padding: 8, background: "rgba(192, 143, 79, 0.1)", borderRadius: 6, border: "1px solid rgba(192, 143, 79, 0.3)" }}>
+            <div style={{ fontSize: 12, fontWeight: "bold", color: "#C08F4F", marginBottom: 6 }}>
+              DETECTED BOXES ({pixelBoxes.length})
+            </div>
+            <div style={{ maxHeight: 120, overflowY: "auto" }}>
+              {pixelBoxes.map((box, i) => (
+                <div key={box.id} style={{ fontSize: 11, marginBottom: 4, color: "#ccc" }}>
+                  <span style={{ color: "#C08F4F", fontWeight: "bold" }}>{box.id}:</span> {box.w}×{box.h}px
+                  {box.label && <span style={{ color: "#888" }}> • {box.label}</span>}
+                  {typeof box.confidence === "number" && (
+                    <span style={{ color: "#888" }}> • {(box.confidence * 100).toFixed(0)}%</span>
+                  )}
+                </div>
+              ))}
+            </div>
+            <div style={{ fontSize: 10, color: "#888", marginTop: 6, fontStyle: "italic" }}>
+              Estimated total area: {pixelBoxes.reduce((sum, box) => sum + (box.w * box.h), 0).toLocaleString()} px²
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -477,7 +506,11 @@ const ModernVoicePanel: React.FC<{
   onConnect: () => void;
   onDisconnect: () => void;
   analyser: AnalyserNode | null;
-}> = ({ history, warnings, sequence, onAsk, count, setCount, isConnected, onConnect, onDisconnect, analyser }) => {
+  audioEnabled: boolean;
+  setAudioEnabled: (enabled: boolean) => void;
+  updateLoadPlan: (count: number) => void;
+  originalDetectedCount: number;
+}> = ({ history, warnings, sequence, onAsk, count, setCount, isConnected, onConnect, onDisconnect, analyser, audioEnabled, setAudioEnabled, updateLoadPlan, originalDetectedCount }) => {
   const [message, setMessage] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -555,28 +588,142 @@ const ModernVoicePanel: React.FC<{
           </button>
         )}
         <div style={{ marginTop: isConnected ? 0 : 16, color: isConnected ? theme.accent : "#888", fontSize: 14 }}>
-          {isConnected ? "Listening..." : "Tap to Speak"}
+          {isConnected ? "🎤 Listening... Speak now!" : "Tap to Speak"}
         </div>
+        {!audioEnabled && (
+          <div style={{ marginTop: 8, color: theme.warning, fontSize: 12, textAlign: "center" }}>
+            Audio responses disabled - click 🔊 below to enable
+          </div>
+        )}
+        {audioEnabled && (
+          <div style={{ display: "flex", gap: 4, marginTop: 8 }}>
+            <button
+              onClick={() => {
+                const testAudio = new Audio('/audio/04480ff0-c1ab-4ad6-bad5-2273f8688385.mp3');
+                testAudio.play().then(() => {
+                  console.log('Test audio played successfully');
+                }).catch(e => {
+                  console.error('Test audio failed:', e);
+                });
+              }}
+              style={{
+                background: "rgba(74, 124, 158, 0.2)",
+                color: theme.accent,
+                border: "1px solid rgba(74, 124, 158, 0.4)",
+                padding: "4px 8px",
+                borderRadius: 4,
+                fontSize: 10,
+                cursor: "pointer"
+              }}
+            >
+              Test Audio
+            </button>
+            <button
+              onClick={() => {
+                console.log('Testing onAsk function');
+                onAsk("Hello, this is a test message");
+              }}
+              style={{
+                background: "rgba(74, 158, 74, 0.2)",
+                color: "#4a9e4a",
+                border: "1px solid rgba(74, 158, 74, 0.4)",
+                padding: "4px 8px",
+                borderRadius: 4,
+                fontSize: 10,
+                cursor: "pointer"
+              }}
+            >
+              Test Chat
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Manual Count Correction */}
-      <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "8px 12px", background: "rgba(255,255,255,0.03)", borderRadius: 8 }}>
-        <span style={{ fontSize: 14, color: "#888" }}>Detected Count:</span>
-        <input
-          type="number"
-          value={count}
-          onChange={(e) => setCount(parseInt(e.target.value) || 0)}
-          style={{
-            background: "transparent",
-            border: "none",
-            color: theme.accent,
-            fontSize: 16,
-            fontWeight: "bold",
-            width: 60,
-            outline: "none"
-          }}
-        />
-        <span style={{ fontSize: 12, color: "#666" }}>(Edit to correct)</span>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: "12px", background: "rgba(255,255,255,0.05)", borderRadius: 8, border: "1px solid rgba(74, 124, 158, 0.3)" }}>
+        <div style={{ fontSize: 12, color: "#888", textTransform: "uppercase", letterSpacing: 1 }}>Box Count Correction</div>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <span style={{ fontSize: 14, color: "#ccc" }}>Count:</span>
+          <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+            <button
+              onClick={() => setCount(Math.max(0, count - 1))}
+              style={{
+                background: "rgba(255,255,255,0.1)",
+                border: "1px solid rgba(255,255,255,0.2)",
+                color: theme.accent,
+                width: 24,
+                height: 24,
+                borderRadius: 3,
+                cursor: "pointer",
+                fontSize: 14,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center"
+              }}
+            >
+              −
+            </button>
+            <input
+              type="number"
+              value={count}
+              onChange={(e) => setCount(parseInt(e.target.value) || 0)}
+              style={{
+                background: "rgba(255,255,255,0.1)",
+                border: "1px solid rgba(255,255,255,0.2)",
+                color: theme.accent,
+                fontSize: 16,
+                fontWeight: "bold",
+                width: 60,
+                padding: "4px 8px",
+                borderRadius: 4,
+                outline: "none",
+                textAlign: "center"
+              }}
+            />
+            <button
+              onClick={() => setCount(count + 1)}
+              style={{
+                background: "rgba(255,255,255,0.1)",
+                border: "1px solid rgba(255,255,255,0.2)",
+                color: theme.accent,
+                width: 24,
+                height: 24,
+                borderRadius: 3,
+                cursor: "pointer",
+                fontSize: 14,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center"
+              }}
+            >
+              +
+            </button>
+          </div>
+          <span style={{ fontSize: 11, color: "#888" }}>boxes</span>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <div style={{ fontSize: 11, color: "#666", fontStyle: "italic", flex: 1 }}>
+            {count !== originalDetectedCount 
+              ? `Corrected from ${originalDetectedCount} to ${count} boxes`
+              : "Edit this if the AI counted incorrectly"
+            }
+          </div>
+          <button
+            onClick={() => updateLoadPlan(count)}
+            style={{
+              background: theme.accent,
+              color: "#fff",
+              border: "none",
+              padding: "4px 8px",
+              borderRadius: 4,
+              fontSize: 10,
+              cursor: "pointer",
+              fontWeight: "bold"
+            }}
+          >
+            Update Plan
+          </button>
+        </div>
       </div>
 
       {/* Modern Chat History */}
@@ -665,27 +812,78 @@ const ModernVoicePanel: React.FC<{
             <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
           </svg>
         </button>
+        <button
+          onClick={() => setAudioEnabled(!audioEnabled)}
+          style={{
+            background: audioEnabled ? "rgba(74, 158, 74, 0.2)" : "rgba(200, 90, 90, 0.2)",
+            color: audioEnabled ? "#4a9e4a" : "#c85a5a",
+            border: `1px solid ${audioEnabled ? "rgba(74, 158, 74, 0.4)" : "rgba(200, 90, 90, 0.4)"}`,
+            width: 42,
+            height: 42,
+            borderRadius: "50%",
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: 12
+          }}
+          title={audioEnabled ? "Audio enabled" : "Audio disabled - click to enable"}
+        >
+          🔊
+        </button>
       </div>
 
       {/* Info Cards (Compact) */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-        <div style={{ background: "rgba(255,255,255,0.03)", padding: 10, borderRadius: 8 }}>
-          <div style={{ fontSize: 11, color: "#888", marginBottom: 4 }}>MANUAL COUNT</div>
+        <div style={{ 
+          background: count !== originalDetectedCount ? "rgba(212, 162, 74, 0.1)" : "rgba(74, 124, 158, 0.1)", 
+          padding: 10, 
+          borderRadius: 8,
+          border: `1px solid ${count !== originalDetectedCount ? "rgba(212, 162, 74, 0.3)" : "rgba(74, 124, 158, 0.3)"}`
+        }}>
+          <div style={{ 
+            fontSize: 11, 
+            color: count !== originalDetectedCount ? theme.warning : theme.accent, 
+            marginBottom: 4, 
+            fontWeight: "bold" 
+          }}>
+            {count !== originalDetectedCount ? "MANUALLY CORRECTED" : "DETECTED COUNT"}
+          </div>
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
             <input
               type="number"
               value={count}
               onChange={(e) => setCount(parseInt(e.target.value || "0", 10))}
               style={{
-                background: "transparent",
-                border: "none",
-                color: theme.text,
+                background: "rgba(255,255,255,0.1)",
+                border: "1px solid rgba(255,255,255,0.2)",
+                color: count !== originalDetectedCount ? theme.warning : theme.accent,
                 fontSize: 16,
                 fontWeight: "bold",
-                width: 40
+                width: 50,
+                padding: "2px 4px",
+                borderRadius: 3,
+                textAlign: "center"
               }}
             />
-            <span style={{ fontSize: 12, color: "#666" }}>boxes</span>
+            <span style={{ fontSize: 12, color: "#ccc" }}>boxes</span>
+            {count !== originalDetectedCount && (
+              <button
+                onClick={() => setCount(originalDetectedCount)}
+                style={{
+                  background: "rgba(255,255,255,0.1)",
+                  border: "1px solid rgba(255,255,255,0.2)",
+                  color: "#888",
+                  fontSize: 10,
+                  padding: "2px 6px",
+                  borderRadius: 3,
+                  cursor: "pointer"
+                }}
+                title="Reset to detected count"
+              >
+                ↺
+              </button>
+            )}
           </div>
         </div>
         <div style={{ background: "rgba(255,255,255,0.03)", padding: 10, borderRadius: 8 }}>
@@ -820,38 +1018,129 @@ const App: React.FC = () => {
   const [warnings, setWarnings] = useState<string[]>([]);
   const [sequence, setSequence] = useState<string[]>([]);
   const [manualCount, setManualCount] = useState<number>(0);
+  const [originalDetectedCount, setOriginalDetectedCount] = useState<number>(0);
   const [isConnected, setIsConnected] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const recognitionRef = useRef<any>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [audioEnabled, setAudioEnabled] = useState(false);
+
+  const onAsk = useCallback(async (text: string) => {
+    console.log('onAsk called with text:', text);
+    if (!text.trim()) return;
+    setHistory((h) => [...h, `You: ${text}`]);
+    try {
+      const res = await fetch("/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: [
+            { role: "user", content: text },
+            { role: "user", content: `Current box count: ${manualCount}` },
+            { role: "user", content: `Detected boxes details: ${pixelBoxes.map(b => `${b.id} (${b.w}×${b.h}px, ${b.label || 'box'}, ${typeof b.confidence === 'number' ? (b.confidence * 100).toFixed(0) + '%' : 'unknown'} confidence)`).join(', ')}` },
+          ],
+          context: { boxes, route, vehicle, pixelBoxes, imageSize },
+        }),
+      });
+      const data = await res.json();
+      setHistory((h) => [...h, `AI: ${data.reply}`]);
+
+      // Play audio response if available and audio is enabled
+      if (data.audio_url && audioEnabled) {
+        if (audioRef.current) {
+          audioRef.current.pause();
+        }
+        const audio = new Audio(data.audio_url);
+        audioRef.current = audio;
+        
+        // Add event listeners for better debugging
+        audio.addEventListener('loadstart', () => console.log('Audio loading started'));
+        audio.addEventListener('canplay', () => console.log('Audio can play'));
+        audio.addEventListener('error', (e) => console.error('Audio error event:', e));
+        
+        audio.play().catch(e => {
+          console.error("Audio playback error:", e);
+          // Try to enable audio context if it's suspended
+          if (e.name === 'NotAllowedError') {
+            console.log('Audio playback blocked - user interaction required');
+          }
+        });
+      }
+    } catch (e) {
+      console.error("Chat error:", e);
+      setHistory((h) => [...h, "AI: Sorry, I encountered an error."]);
+    }
+  }, [manualCount, boxes, route, vehicle, audioEnabled, pixelBoxes, imageSize]);
 
   useEffect(() => {
     // Initialize Speech Recognition
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    console.log('Initializing speech recognition, support:', !!SpeechRecognition);
+    
     if (SpeechRecognition) {
       const recognition = new SpeechRecognition();
       recognition.continuous = false;
-      recognition.interimResults = false;
+      recognition.interimResults = true;
       recognition.lang = "en-US";
 
-      recognition.onstart = () => setIsConnected(true);
-      recognition.onend = () => setIsConnected(false);
+      recognition.onstart = () => {
+        console.log('Speech recognition started');
+        setIsConnected(true);
+      };
+      recognition.onend = () => {
+        console.log('Speech recognition ended');
+        setIsConnected(false);
+      };
       recognition.onresult = (event: any) => {
-        const transcript = event.results[0][0].transcript;
-        if (transcript) {
-          onAsk(transcript);
+        console.log('Speech recognition event:', event);
+        
+        // Check for final results
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const result = event.results[i];
+          const transcript = result[0].transcript;
+          
+          if (result.isFinal) {
+            console.log('Final speech recognition result:', transcript);
+            if (transcript && transcript.trim()) {
+              console.log('Calling onAsk with transcript:', transcript);
+              onAsk(transcript);
+            }
+          } else {
+            console.log('Interim speech recognition result:', transcript);
+          }
         }
       };
       recognition.onerror = (event: any) => {
-        console.error("Speech recognition error", event.error);
+        console.error("Speech recognition error", event.error, event);
         setIsConnected(false);
       };
+      
       recognitionRef.current = recognition;
+      console.log('Speech recognition initialized and stored in ref');
+    } else {
+      console.error('Speech recognition not supported in this browser');
     }
-  }, []);
+  }, [onAsk]);
 
   const connectVoice = async () => {
+    console.log('connectVoice called, isConnected:', isConnected);
     if (isConnected) return;
+    
+    // Check microphone permissions first
+    try {
+      await navigator.mediaDevices.getUserMedia({ audio: true });
+      console.log('Microphone permission granted');
+    } catch (e) {
+      console.error('Microphone permission denied:', e);
+      alert('Microphone permission is required for voice input. Please allow microphone access and try again.');
+      return;
+    }
+    
+    // Enable audio on first user interaction
+    if (!audioEnabled) {
+      setAudioEnabled(true);
+      console.log('Audio enabled');
+    }
     
     // Stop any playing audio
     if (audioRef.current) {
@@ -860,10 +1149,20 @@ const App: React.FC = () => {
     }
 
     // Start recognition
-    recognitionRef.current?.start();
+    if (recognitionRef.current) {
+      console.log('Starting speech recognition');
+      try {
+        recognitionRef.current.start();
+      } catch (e) {
+        console.error('Error starting speech recognition:', e);
+      }
+    } else {
+      console.error('Speech recognition not available');
+    }
   };
 
   const disconnectVoice = () => {
+    console.log('disconnectVoice called');
     recognitionRef.current?.stop();
   };
 
@@ -895,6 +1194,7 @@ const App: React.FC = () => {
     }));
     setBoxes(mapped);
     setManualCount(mapped.length);
+    setOriginalDetectedCount(mapped.length);
     const planRes = await fetch("/load-plan", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -906,36 +1206,41 @@ const App: React.FC = () => {
     setSequence(plan.sequence || []);
   };
 
-  const onAsk = async (text: string) => {
-    if (!text.trim()) return;
-    setHistory((h) => [...h, `You: ${text}`]);
+  const updateLoadPlan = async (newCount: number) => {
+    // Update boxes array to match the new count
+    const updatedBoxes = [...boxes];
+    
+    if (newCount > boxes.length) {
+      // Add more boxes if count increased
+      for (let i = boxes.length; i < newCount; i++) {
+        updatedBoxes.push({
+          id: `box-${i + 1}`,
+          x: Math.floor(Math.random() * 18),
+          y: Math.floor(Math.random() * 13),
+          w: 1,
+          h: 1,
+        });
+      }
+    } else if (newCount < boxes.length) {
+      // Remove boxes if count decreased
+      updatedBoxes.splice(newCount);
+    }
+    
+    setBoxes(updatedBoxes);
+    
+    // Re-run load planning with updated boxes
     try {
-      const res = await fetch("/chat", {
+      const planRes = await fetch("/load-plan", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          messages: [
-            { role: "user", content: text },
-            { role: "user", content: `Current box count: ${manualCount}` },
-          ],
-          context: { boxes, route, vehicle },
-        }),
+        body: JSON.stringify({ grid_width: 20, grid_height: 15, boxes: updatedBoxes }),
       });
-      const data = await res.json();
-      setHistory((h) => [...h, `AI: ${data.reply}`]);
-
-      // Play audio response if available
-      if (data.audio_url) {
-        if (audioRef.current) {
-          audioRef.current.pause();
-        }
-        const audio = new Audio(data.audio_url);
-        audioRef.current = audio;
-        audio.play().catch(e => console.error("Audio playback error:", e));
-      }
+      const plan = await planRes.json();
+      setBoxes(plan.placements);
+      setWarnings(plan.warnings || []);
+      setSequence(plan.sequence || []);
     } catch (e) {
-      console.error("Chat error:", e);
-      setHistory((h) => [...h, "AI: Sorry, I encountered an error."]);
+      console.error("Load plan update error:", e);
     }
   };
 
@@ -992,6 +1297,10 @@ const App: React.FC = () => {
             onConnect={connectVoice}
             onDisconnect={disconnectVoice}
             analyser={null}
+            audioEnabled={audioEnabled}
+            setAudioEnabled={setAudioEnabled}
+            updateLoadPlan={updateLoadPlan}
+            originalDetectedCount={originalDetectedCount}
           />
         </div>
       </div>
