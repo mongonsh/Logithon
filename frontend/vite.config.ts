@@ -10,6 +10,7 @@ export default defineConfig({
       '/chat': 'http://localhost:8000',
       '/load-plan': 'http://localhost:8000',
       '/health': 'http://localhost:8000',
+      '/audio': 'http://localhost:8000',
       '/voice-stream': {
         target: 'ws://localhost:8000',
         ws: true

@@ -158,63 +158,87 @@ const LeftPanel: React.FC<{
               />
             </div>
             {imagePreview && (
-              <div style={{ position: "relative", flex: 1, overflow: "hidden", border: "1px solid #333", borderRadius: 8 }}>
-                 <img src={imagePreview} alt="Preview" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
-                 {imageSize && pixelBoxes.length > 0 && (
-                  <div style={{ position: "absolute", inset: 0 }}>
-                    {pixelBoxes.map((b) => {
-                      const leftPct = (b.x / imageSize.w) * 100;
-                      const topPct = (b.y / imageSize.h) * 100;
-                      const widthPct = (b.w / imageSize.w) * 100;
-                      const heightPct = (b.h / imageSize.h) * 100;
-                      return (
-                        <div
-                          key={b.id}
-                          style={{
-                            position: "absolute",
-                            left: `${leftPct}%`,
-                            top: `${topPct}%`,
-                            width: `${widthPct}%`,
-                            height: `${heightPct}%`,
-                            border: "2px solid #8a6232",
-                            boxShadow: "0 0 0 1px rgba(0,0,0,0.4)",
-                            background: "rgba(192, 143, 79, 0.15)"
-                          }}
-                        >
+              <div style={{ 
+                position: "relative", 
+                flex: 1, 
+                overflow: "hidden", 
+                border: "1px solid #333", 
+                borderRadius: 8,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                background: "#000"
+              }}>
+                 {imageSize ? (
+                   <div style={{
+                     position: "relative",
+                     aspectRatio: `${imageSize.w} / ${imageSize.h}`,
+                     maxWidth: "100%",
+                     maxHeight: "100%"
+                   }}>
+                      <img src={imagePreview} alt="Preview" style={{ width: "100%", height: "100%", display: "block" }} />
+                      {pixelBoxes.length > 0 && (
+                        <div style={{ position: "absolute", inset: 0 }}>
+                          {pixelBoxes.map((b) => {
+                            const leftPct = (b.x / imageSize.w) * 100;
+                            const topPct = (b.y / imageSize.h) * 100;
+                            const widthPct = (b.w / imageSize.w) * 100;
+                            const heightPct = (b.h / imageSize.h) * 100;
+                            return (
+                              <div
+                                key={b.id}
+                                style={{
+                                  position: "absolute",
+                                  left: `${leftPct}%`,
+                                  top: `${topPct}%`,
+                                  width: `${widthPct}%`,
+                                  height: `${heightPct}%`,
+                                  border: "2px solid #8a6232",
+                                  boxShadow: "0 0 0 1px rgba(0,0,0,0.4)",
+                                  background: "rgba(192, 143, 79, 0.15)"
+                                }}
+                              >
+                                <div
+                                  style={{
+                                    position: "absolute",
+                                    bottom: -22,
+                                    left: 0,
+                                    background: "#C08F4F",
+                                    color: "#2a1d10",
+                                    fontSize: 12,
+                                    padding: "2px 6px",
+                                    borderRadius: 4,
+                                    border: "1px solid #8a6232",
+                                    whiteSpace: "nowrap",
+                                    zIndex: 10
+                                  }}
+                                >
+                                  {b.id}{b.label ? ` • ${b.label}` : ""}{typeof b.confidence === "number" ? ` • ${(b.confidence * 100).toFixed(0)}%` : ""}
+                                </div>
+                              </div>
+                            );
+                          })}
                           <div
                             style={{
                               position: "absolute",
-                              bottom: -22,
-                              left: 0,
-                              background: "#C08F4F",
-                              color: "#2a1d10",
+                              top: 8,
+                              right: 8,
+                              background: "#2a2b2d",
+                              color: "#e8e8ea",
+                              padding: "4px 8px",
+                              borderRadius: 6,
                               fontSize: 12,
-                              padding: "2px 6px",
-                              borderRadius: 4,
-                              border: "1px solid #8a6232"
+                              border: "1px solid #444",
+                              zIndex: 20
                             }}
                           >
-                            {b.id}{b.label ? ` • ${b.label}` : ""}{typeof b.confidence === "number" ? ` • ${(b.confidence * 100).toFixed(0)}%` : ""}
+                            {pixelBoxes.length} detected
                           </div>
                         </div>
-                      );
-                    })}
-                    <div
-                      style={{
-                        position: "absolute",
-                        top: 8,
-                        right: 8,
-                        background: "#2a2b2d",
-                        color: "#e8e8ea",
-                        padding: "4px 8px",
-                        borderRadius: 6,
-                        fontSize: 12,
-                        border: "1px solid #444"
-                      }}
-                    >
-                      {pixelBoxes.length} detected
-                    </div>
-                  </div>
+                       )}
+                   </div>
+                 ) : (
+                   <img src={imagePreview} alt="Preview" style={{ maxWidth: "100%", maxHeight: "100%" }} />
                  )}
               </div>
             )}
@@ -535,6 +559,26 @@ const ModernVoicePanel: React.FC<{
         </div>
       </div>
 
+      {/* Manual Count Correction */}
+      <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "8px 12px", background: "rgba(255,255,255,0.03)", borderRadius: 8 }}>
+        <span style={{ fontSize: 14, color: "#888" }}>Detected Count:</span>
+        <input
+          type="number"
+          value={count}
+          onChange={(e) => setCount(parseInt(e.target.value) || 0)}
+          style={{
+            background: "transparent",
+            border: "none",
+            color: theme.accent,
+            fontSize: 16,
+            fontWeight: "bold",
+            width: 60,
+            outline: "none"
+          }}
+        />
+        <span style={{ fontSize: 12, color: "#666" }}>(Edit to correct)</span>
+      </div>
+
       {/* Modern Chat History */}
       <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}>
         <div style={{ marginBottom: 8, fontSize: 12, textTransform: "uppercase", letterSpacing: 1, color: "#666" }}>
@@ -778,118 +822,51 @@ const App: React.FC = () => {
   const [manualCount, setManualCount] = useState<number>(0);
   const [isConnected, setIsConnected] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const wsRef = useRef<WebSocket | null>(null);
-  const audioContextRef = useRef<AudioContext | null>(null);
-  const analyserRef = useRef<AnalyserNode | null>(null);
-  const [analyserState, setAnalyserState] = useState<AnalyserNode | null>(null);
+  const recognitionRef = useRef<any>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
-    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
-    const analyser = ctx.createAnalyser();
-    analyser.fftSize = 256;
-    analyserRef.current = analyser;
-    setAnalyserState(analyser);
-    audioContextRef.current = ctx;
-    return () => {
-      ctx.close();
-    };
+    // Initialize Speech Recognition
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (SpeechRecognition) {
+      const recognition = new SpeechRecognition();
+      recognition.continuous = false;
+      recognition.interimResults = false;
+      recognition.lang = "en-US";
+
+      recognition.onstart = () => setIsConnected(true);
+      recognition.onend = () => setIsConnected(false);
+      recognition.onresult = (event: any) => {
+        const transcript = event.results[0][0].transcript;
+        if (transcript) {
+          onAsk(transcript);
+        }
+      };
+      recognition.onerror = (event: any) => {
+        console.error("Speech recognition error", event.error);
+        setIsConnected(false);
+      };
+      recognitionRef.current = recognition;
+    }
   }, []);
 
   const connectVoice = async () => {
     if (isConnected) return;
-    const proto = location.protocol === "https:" ? "wss" : "ws";
-    const ws = new WebSocket(`${proto}://${location.host}/voice-stream`);
-    ws.onopen = async () => {
-      setIsConnected(true);
-      // Start microphone capture and stream audio chunks
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const audioCtx = audioContextRef.current!;
-      if (audioCtx.state === "suspended") {
-        await audioCtx.resume();
-      }
-      const source = audioCtx.createMediaStreamSource(stream);
-      const processor = audioCtx.createScriptProcessor(4096, 1, 1);
-      
-      // Connect mic to analyser too for visual feedback of user voice
-      if (analyserRef.current) {
-        source.connect(analyserRef.current);
-      }
-      
-      source.connect(processor);
-      processor.connect(audioCtx.destination);
-      processor.onaudioprocess = (e) => {
-        const input = e.inputBuffer.getChannelData(0);
-        const pcm16 = new Int16Array(input.length);
-        for (let i = 0; i < input.length; i++) {
-          const s = Math.max(-1, Math.min(1, input[i]));
-          pcm16[i] = s < 0 ? s * 0x8000 : s * 0x7fff;
-        }
-        const buf = Buffer.from(pcm16.buffer);
-        const payload = { user_audio_chunk: buf.toString("base64") };
-        ws.send(JSON.stringify(payload));
-      };
-    };
-    ws.onerror = () => {
-      setIsConnected(false);
-    };
-    ws.onmessage = async (event) => {
-      const data = JSON.parse(event.data);
-      // Handle ping/pong
-      if (data.type === "ping") {
-        setTimeout(() => {
-          ws.send(
-            JSON.stringify({
-              type: "pong",
-              event_id: data.ping_event?.event_id,
-            })
-          );
-        }, data.ping_event?.ping_ms || 1000);
-      }
-      // Handle audio chunks from ElevenLabs (base64-encoded)
-      if (data.type === "audio" && data.audio_event?.audio_base64) {
-        const audioBase64 = data.audio_event.audio_base64;
-        const binary = atob(audioBase64);
-        const bytes = new Uint8Array(binary.length);
-        for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-        const arrayBuffer = bytes.buffer;
-        try {
-          const audioBuffer = await audioContextRef.current!.decodeAudioData(arrayBuffer.slice(0));
-          const source = audioContextRef.current!.createBufferSource();
-          source.buffer = audioBuffer;
-          
-          // Connect AI audio to analyser
-          if (analyserRef.current) {
-             source.connect(analyserRef.current);
-          }
-          
-          source.connect(audioContextRef.current!.destination);
-          source.start();
-        } catch {
-          // Ignore decode errors
-        }
-      }
-      if (data.type === "agent_response") {
-        const t = data.agent_response_event?.agent_response;
-        if (t) setHistory((h) => [...h, `AI: ${t}`]);
-      }
-      if (data.type === "user_transcript") {
-        const t = data.user_transcription_event?.user_transcript;
-        if (t) setHistory((h) => [...h, `You: ${t}`]);
-      }
-      if (data.type === "error" && data.error) {
-        setHistory((h) => [...h, `AI: ${data.error}`]);
-      }
-    };
-    ws.onclose = () => {
-      setIsConnected(false);
-      wsRef.current = null;
-    };
-    wsRef.current = ws;
+    
+    // Stop any playing audio
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
+    }
+
+    // Start recognition
+    recognitionRef.current?.start();
   };
 
   const disconnectVoice = () => {
-    wsRef.current?.close();
+    recognitionRef.current?.stop();
   };
+
 
   const onImageSelected = async (file: File) => {
     // Create preview URL
@@ -932,19 +909,34 @@ const App: React.FC = () => {
   const onAsk = async (text: string) => {
     if (!text.trim()) return;
     setHistory((h) => [...h, `You: ${text}`]);
-    const res = await fetch("/chat", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        messages: [
-          { role: "user", content: text },
-          { role: "user", content: `Current box count: ${manualCount}` },
-        ],
-        context: { boxes, route, vehicle },
-      }),
-    });
-    const data = await res.json();
-    setHistory((h) => [...h, `AI: ${data.reply}`]);
+    try {
+      const res = await fetch("/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: [
+            { role: "user", content: text },
+            { role: "user", content: `Current box count: ${manualCount}` },
+          ],
+          context: { boxes, route, vehicle },
+        }),
+      });
+      const data = await res.json();
+      setHistory((h) => [...h, `AI: ${data.reply}`]);
+
+      // Play audio response if available
+      if (data.audio_url) {
+        if (audioRef.current) {
+          audioRef.current.pause();
+        }
+        const audio = new Audio(data.audio_url);
+        audioRef.current = audio;
+        audio.play().catch(e => console.error("Audio playback error:", e));
+      }
+    } catch (e) {
+      console.error("Chat error:", e);
+      setHistory((h) => [...h, "AI: Sorry, I encountered an error."]);
+    }
   };
 
   return (
@@ -999,7 +991,7 @@ const App: React.FC = () => {
             isConnected={isConnected}
             onConnect={connectVoice}
             onDisconnect={disconnectVoice}
-            analyser={analyserState}
+            analyser={null}
           />
         </div>
       </div>
